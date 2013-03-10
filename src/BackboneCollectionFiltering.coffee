@@ -4,8 +4,10 @@ _ = this._
 
 oldFilter = Backbone.Collection.prototype.filter
 
+lastNumber = 0
+
 aUniqueNumber = ->
-  if @lastNumber? then @lastNumber++ else @lastNumber = 1
+  lastNumber++
   return @lastNumber
 
 class BackboneFilteredCollection extends Backbone.Collection
@@ -21,10 +23,10 @@ Backbone.Collection.prototype.filter = (filter) ->
 
   handleChange = (c, model) ->
 
-    removedFrom = for filteredCollection in c.filteredCollections when _.contains(filteredCollection.models, model) and !(filteredCollection.filter(model))
+    removedFrom = for filteredCollection in c.filteredCollections when _.contains(filteredCollection.models, model) and !(filteredCollection.filter.call(model, model))
       filteredCollection.remove(model)
 
-    addedTo = for filteredCollection in c.filteredCollections when filteredCollection.filter(model)
+    addedTo = for filteredCollection in c.filteredCollections when filteredCollection.filter.call(model, model)
       filteredCollection.add(model)
 
     ###
@@ -41,7 +43,7 @@ Backbone.Collection.prototype.filter = (filter) ->
   handleAdd = (collection, model) ->
     addListener(collection, model)
 
-    filteredCollection.add(model) for filteredCollection in collection.filteredCollections when filteredCollection.filter(model)
+    filteredCollection.add(model) for filteredCollection in collection.filteredCollections when filteredCollection.filter.call(model, model)
 
   handleRemove = (collection, model) ->
     filteredCollection.remove(model) for filteredCollection in collection.filteredCollections when _.contains(filteredCollection.models, model)
@@ -58,6 +60,5 @@ Backbone.Collection.prototype.filter = (filter) ->
 
   filteredCollection = new BackboneFilteredCollection(this, filter)
   @filteredCollections.push filteredCollection
-  console.log "There are now " + @filteredCollections.length + " filtered collections"
-  filteredCollection.add(model) for model in @models when filter(model)
+  filteredCollection.add(model) for model in @models when filter.call(model, model)
   return filteredCollection 
